@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Michael Clarke
+ * Copyright (C) 2022 Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,6 @@
 package com.github.mc1arke.sonarqube.plugin.scanner;
 
 import org.junit.jupiter.api.Test;
-import org.sonar.api.utils.MessageException;
 import org.sonar.scanner.scan.branch.BranchConfiguration;
 import org.sonar.scanner.scan.branch.BranchInfo;
 import org.sonar.scanner.scan.branch.BranchType;
@@ -71,51 +70,14 @@ class BranchConfigurationFactoryTest {
     }
 
     @Test
-    void shouldThrowErrorIfAttemptingToCreatePullRequestWithNoTargetIfNoProjectBranchesExist() {
-        ProjectBranches projectBranches = mock(ProjectBranches.class);
-        when(projectBranches.isEmpty()).thenReturn(true);
-        when(projectBranches.defaultBranchName()).thenReturn("default-branch-name");
-
-        BranchConfigurationFactory underTest = new BranchConfigurationFactory();
-        assertThatThrownBy(() -> underTest.createPullRequestConfiguration("key", "source", null, projectBranches))
-                .usingRecursiveComparison()
-                .isEqualTo(MessageException.of("No branch exists in Sonarqube with the name default-branch-name"));
-    }
-
-    @Test
-    void shouldThrowErrorIfAttemptingToCreatePullRequestWithTargetIfNoProjectBranchesExist() {
+    void shouldReturnPullRequestWithNoTargetIfNoProjectBranchesExist() {
         ProjectBranches projectBranches = mock(ProjectBranches.class);
         when(projectBranches.isEmpty()).thenReturn(true);
 
         BranchConfigurationFactory underTest = new BranchConfigurationFactory();
-        assertThatThrownBy(() -> underTest.createPullRequestConfiguration("key", "source", "target", projectBranches))
-                .usingRecursiveComparison()
-                .isEqualTo(MessageException.of("No branch exists in Sonarqube with the name target"));
-    }
+        BranchConfiguration actual = underTest.createPullRequestConfiguration("key", "source", "target", projectBranches);
 
-    @Test
-    void shouldThrowErrorIfAttemptingToCreatePullRequestWithTargetBranchThatDoesNotExist() {
-        ProjectBranches projectBranches = mock(ProjectBranches.class);
-        when(projectBranches.isEmpty()).thenReturn(false);
-
-        BranchConfigurationFactory underTest = new BranchConfigurationFactory();
-        assertThatThrownBy(() -> underTest.createPullRequestConfiguration("key", "source", "target-branch", projectBranches))
-                .usingRecursiveComparison()
-                .isEqualTo(MessageException.of("No branch exists in Sonarqube with the name target-branch"));
-    }
-
-    @Test
-    void shouldReturnPullRequestWithTargetOfDefaultBranchIfTargetNotSpecifiedAndDefaultExists() {
-        ProjectBranches projectBranches = mock(ProjectBranches.class);
-        when(projectBranches.isEmpty()).thenReturn(false);
-        when(projectBranches.defaultBranchName()).thenReturn("defaultBranch");
-        BranchInfo branchInfo = new BranchInfo("defaultBranch", BranchType.BRANCH, true, null);
-        when(projectBranches.get("defaultBranch")).thenReturn(branchInfo);
-
-        BranchConfigurationFactory underTest = new BranchConfigurationFactory();
-        BranchConfiguration actual = underTest.createPullRequestConfiguration("key", "source", null, projectBranches);
-
-        assertThat(actual).usingRecursiveComparison().isEqualTo(new CommunityBranchConfiguration("source", BranchType.PULL_REQUEST, "defaultBranch", "defaultBranch", "key"));
+        assertThat(actual).usingRecursiveComparison().isEqualTo(new CommunityBranchConfiguration("source", BranchType.PULL_REQUEST, null, "target", "key"));
     }
 
     @Test
