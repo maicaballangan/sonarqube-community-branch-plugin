@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2024 SonarSource SA (mailto:info AT sonarsource DOT com), Michael Clarke
+ * Copyright (C) 2009-2023 SonarSource SA (mailto:info AT sonarsource DOT com), Michael Clarke
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -120,12 +120,10 @@ public class ListAction extends ProjectWsAction {
         ProjectPullRequests.PullRequest.Builder builder = ProjectPullRequests.PullRequest.newBuilder();
         builder.setKey(branch.getKey());
 
-        Optional<DbProjectBranches.PullRequestData> optionalPullRequestData = Optional.ofNullable(branch.getPullRequestData());
-        optionalPullRequestData.ifPresent(pullRequestData -> {
-            builder.setBranch(pullRequestData.getBranch());
-            Optional.ofNullable(Strings.emptyToNull(pullRequestData.getUrl())).ifPresent(builder::setUrl);
-            Optional.ofNullable(Strings.emptyToNull(pullRequestData.getTitle())).ifPresent(builder::setTitle);
-        });
+        DbProjectBranches.PullRequestData pullRequestData = Objects.requireNonNull(branch.getPullRequestData(), "Pull request data should be available for branch type PULL_REQUEST");
+        builder.setBranch(pullRequestData.getBranch());
+        Optional.ofNullable(Strings.emptyToNull(pullRequestData.getUrl())).ifPresent(builder::setUrl);
+        Optional.ofNullable(Strings.emptyToNull(pullRequestData.getTitle())).ifPresent(builder::setTitle);
 
         if (mergeBranch.isPresent()) {
             String mergeBranchKey = mergeBranch.get().getKey();
@@ -134,10 +132,8 @@ public class ListAction extends ProjectWsAction {
             builder.setIsOrphan(true);
         }
 
-        Optional<String> pullRequestTarget = optionalPullRequestData.map(DbProjectBranches.PullRequestData::getTarget)
-                .filter(StringUtils::isNotEmpty);
-        if (pullRequestTarget.isPresent()) {
-            builder.setTarget(pullRequestTarget.get());
+        if (StringUtils.isNotEmpty(pullRequestData.getTarget())) {
+            builder.setTarget(pullRequestData.getTarget());
         } else {
             mergeBranch.ifPresent(branchDto -> builder.setTarget(branchDto.getKey()));
         }
